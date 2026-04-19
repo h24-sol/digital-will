@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIGITAL WILL - Secure Legacy</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root { --primary: #2563eb; --dark: #1e293b; --light: #f8fafc; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); margin: 0; padding: 20px; color: var(--dark); }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary); text-align: center; margin-bottom: 10px; }
+        p.subtitle { text-align: center; color: #64748b; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #1d4ed8; }
+        .status-box { margin-top: 20px; padding: 15px; border-radius: 8px; background: #e2e8f0; display: none; }
+        .emergency-btn { background: #ef4444; margin-top: 10px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>DIGITAL WILL</h1>
+    <p class="subtitle">আপনার ডিজিটাল উত্তরাধিকার সুরক্ষিত করুন (Secure Your Digital Legacy)</p>
+
+    <div id="setup-form">
+        <div class="form-group">
+            <label>গোপন তথ্য (Passcodes/Notes):</label>
+            <textarea id="secretData" rows="4" placeholder="আপনার গুরুত্বপূর্ণ পাসওয়ার্ড বা মেসেজ এখানে লিখুন..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>মাস্টার কি (Master Key - এটি ভুলে যাবেন না):</label>
+            <input type="password" id="masterKey" placeholder="ভল্ট এনক্রিপ্ট করার জন্য একটি পাসওয়ার্ড দিন">
+        </div>
+        <div class="form-group">
+            <label>উত্তরাধিকারীর ইমেইল (Beneficiary Email):</label>
+            <input type="email" id="beneficiaryEmail" placeholder="কার কাছে তথ্য পাঠাতে চান?">
+        </div>
+        <div class="form-group">
+            <label>চেক-ইন পিরিয়ড (Trigger Duration):</label>
+            <select id="duration">
+                <option value="30">৩০ দিন (30 Days)</option>
+                <option value="90">৯০ দিন (90 Days)</option>
+                <option value="180">১৮০ দিন (180 Days)</option>
+            </select>
+        </div>
+        <button onclick="saveWill()">ভল্ট সুরক্ষিত করুন (Secure Vault)</button>
+    </div>
+
+    <div id="active-status" class="hidden">
+        <div class="status-box" style="display: block; text-align: center;">
+            <h3 style="color: green;">আপনার ভল্ট বর্তমানে সক্রিয় (Vault Active)</h3>
+            <p id="countdownText"></p>
+            <button onclick="checkIn()">আমি সজাগ আছি (Check-In Now)</button>
+            <button class="emergency-btn" onclick="resetVault()">ভল্ট মুছে ফেলুন (Delete/Reset Vault)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function saveWill() {
+        const secret = document.getElementById('secretData').value;
+        const key = document.getElementById('masterKey').value;
+        const email = document.getElementById('beneficiaryEmail').value;
+        const days = document.getElementById('duration').value;
+
+        if(!secret || !key || !email) { alert("সবগুলো ঘর পূরণ করুন!"); return; }
+
+        // AES Encryption (Zero Knowledge)
+        const encryptedData = CryptoJS.AES.encrypt(secret, key).toString();
+
+        const willData = {
+            data: encryptedData,
+            beneficiary: email,
+            lastCheckIn: Date.now(),
+            duration: days * 24 * 60 * 60 * 1000 // Convert to ms
+        };
+
+        localStorage.setItem('digitalWill', JSON.stringify(willData));
+        alert("আপনার ডিজিটাল উইল এনক্রিপ্ট করে সেভ করা হয়েছে!");
+        updateUI();
+    }
+
+    function checkIn() {
+        let willData = JSON.parse(localStorage.getItem('digitalWill'));
+        willData.lastCheckIn = Date.now();
+        localStorage.setItem('digitalWill', JSON.stringify(willData));
+        alert("চেক-ইন সফল! সময় পুনঃনির্ধারণ করা হয়েছে।");
+        updateUI();
+    }
+
+    function resetVault() {
+        if(confirm("আপনি কি নিশ্চিত যে আপনি আপনার ভল্ট মুছে ফেলতে চান?")) {
+            localStorage.removeItem('digitalWill');
+            location.reload();
+        }
+    }
+
+    function updateUI() {
+        const willData = JSON.parse(localStorage.getItem('digitalWill'));
+        if(willData) {
+            document.getElementById('setup-form').classList.add('hidden');
+            document.getElementById('active-status').classList.remove('hidden');
+            
+            const nextCheckIn = willData.lastCheckIn + willData.duration;
+            const daysLeft = Math.ceil((nextCheckIn - Date.now()) / (1000 * 60 * 60 * 24));
+            document.getElementById('countdownText').innerText = `পরবর্তী চেক-ইন করতে হবে ${daysLeft} দিনের মধ্যে।`;
+            
+            if(Date.now() > nextCheckIn) {
+                alert("সময় পার হয়ে গেছে! ডেটা উত্তরাধিকারীর কাছে পাঠানোর প্রসেস শুরু হচ্ছে...");
+                // এখানে API Call (যেমন EmailJS) যোগ করা যাবে।
+            }
+        }
+    }
+
+    window.onload = updateUI;
+</script>
+
+</body>
+</html>
