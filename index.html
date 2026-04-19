@@ -1,123 +1,244 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIGITAL WILL - Secure Legacy</title>
+    <title>DIGITAL WILL | Secure Legacy Vault</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    
     <style>
-        :root { --primary: #2563eb; --dark: #1e293b; --light: #f8fafc; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); margin: 0; padding: 20px; color: var(--dark); }
-        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        h1 { color: var(--primary); text-align: center; margin-bottom: 10px; }
-        p.subtitle { text-align: center; color: #64748b; margin-bottom: 30px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #1d4ed8; }
-        .status-box { margin-top: 20px; padding: 15px; border-radius: 8px; background: #e2e8f0; display: none; }
-        .emergency-btn { background: #ef4444; margin-top: 10px; }
+        :root {
+            --primary: #020617; --accent: #2563eb; --solana: #14f195; 
+            --glass: rgba(15, 23, 42, 0.95); --text: #f1f5f9;
+        }
+        body { font-family: 'Inter', sans-serif; background: #020617; color: var(--text); margin: 0; line-height: 1.6; }
+        .nav { background: #0f172a; padding: 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); }
+        .logo { font-size: 1.3rem; font-weight: 900; letter-spacing: 2px; color: white; text-decoration: none; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: var(--glass); border-radius: 20px; padding: 2rem; border: 1px solid #1e293b; margin-bottom: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        h2 { font-size: 1rem; color: var(--solana); display: flex; align-items: center; gap: 10px; text-transform: uppercase; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+        input, textarea, select { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 10px; color: white; box-sizing: border-box; }
+        .btn { padding: 14px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-solana { background: #9945ff; color: white; width: auto; font-size: 0.8rem; }
+        .file-list { margin-top: 10px; padding: 10px; background: #020617; border-radius: 8px; border: 1px dashed #334155; font-size: 0.8rem; }
         .hidden { display: none; }
+        .countdown-large { font-size: 4.5rem; font-weight: 900; color: var(--solana); margin: 10px 0; }
+        .badge { background: rgba(20, 241, 149, 0.1); color: var(--solana); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; }
     </style>
 </head>
 <body>
 
+<div class="nav">
+    <a href="#" class="logo">DIGITAL WILL v5</a>
+    <button class="btn btn-solana" id="walletBtn" onclick="connectSolana()">CONNECT PHANTOM</button>
+</div>
+
 <div class="container">
-    <h1>DIGITAL WILL</h1>
-    <p class="subtitle">আপনার ডিজিটাল উত্তরাধিকার সুরক্ষিত করুন (Secure Your Digital Legacy)</p>
+    
+    <div id="setup-view">
+        <div class="card">
+            <h2><i class="fa-solid fa-shield-halved"></i> Security Configuration</h2>
+            <div class="grid">
+                <div>
+                    <label style="font-size: 0.7rem; opacity: 0.6;">MASTER ACCESS KEY</label>
+                    <input type="password" id="masterKey" placeholder="Min 8 characters">
+                </div>
+                <div>
+                    <label style="font-size: 0.7rem; opacity: 0.6;">YOUR EMAIL</label>
+                    <input type="email" id="ownerEmail" placeholder="To receive alerts">
+                </div>
+            </div>
+        </div>
 
-    <div id="setup-form">
-        <div class="form-group">
-            <label>গোপন তথ্য (Passcodes/Notes):</label>
-            <textarea id="secretData" rows="4" placeholder="আপনার গুরুত্বপূর্ণ পাসওয়ার্ড বা মেসেজ এখানে লিখুন..."></textarea>
+        <div class="card">
+            <h2><i class="fa-solid fa-vault"></i> Asset Encryption</h2>
+            <textarea id="vaultData" rows="6" placeholder="Paste all sensitive info here: Bank codes, Seed phrases, Instructions..."></textarea>
+            <label style="font-size: 0.7rem; opacity: 0.6; display: block; margin-top: 15px;">UPLOAD DOCUMENTS (PDF/IMG)</label>
+            <input type="file" id="fileInput" multiple onchange="processFiles(this.files)" style="margin-top: 5px;">
+            <div id="filePreview" class="file-list hidden"></div>
         </div>
-        <div class="form-group">
-            <label>মাস্টার কি (Master Key - এটি ভুলে যাবেন না):</label>
-            <input type="password" id="masterKey" placeholder="ভল্ট এনক্রিপ্ট করার জন্য একটি পাসওয়ার্ড দিন">
+
+        <div class="card">
+            <h2><i class="fa-solid fa-paper-plane"></i> Automated Delivery</h2>
+            <div class="grid">
+                <select id="triggerTime">
+                    <option value="0.0014">2 Minutes (TESTING)</option>
+                    <option value="30">30 Days Inactivity</option>
+                    <option value="365">1 Year Inactivity</option>
+                </select>
+                <input type="email" id="nomineeEmail" placeholder="Nominee's Email Address">
+            </div>
+            <button class="btn btn-primary" style="margin-top: 20px;" onclick="sealVault()">SEAL & START HEARTBEAT</button>
         </div>
-        <div class="form-group">
-            <label>উত্তরাধিকারীর ইমেইল (Beneficiary Email):</label>
-            <input type="email" id="beneficiaryEmail" placeholder="কার কাছে তথ্য পাঠাতে চান?">
-        </div>
-        <div class="form-group">
-            <label>চেক-ইন পিরিয়ড (Trigger Duration):</label>
-            <select id="duration">
-                <option value="30">৩০ দিন (30 Days)</option>
-                <option value="90">৯০ দিন (90 Days)</option>
-                <option value="180">১৮০ দিন (180 Days)</option>
-            </select>
-        </div>
-        <button onclick="saveWill()">ভল্ট সুরক্ষিত করুন (Secure Vault)</button>
     </div>
 
-    <div id="active-status" class="hidden">
-        <div class="status-box" style="display: block; text-align: center;">
-            <h3 style="color: green;">আপনার ভল্ট বর্তমানে সক্রিয় (Vault Active)</h3>
-            <p id="countdownText"></p>
-            <button onclick="checkIn()">আমি সজাগ আছি (Check-In Now)</button>
-            <button class="emergency-btn" onclick="resetVault()">ভল্ট মুছে ফেলুন (Delete/Reset Vault)</button>
+    <div id="active-view" class="hidden">
+        <div class="card" style="text-align: center;">
+            <span class="badge">SYSTEM ENCRYPTED</span>
+            <div id="timerDisplay" class="countdown-large">--</div>
+            <p style="opacity: 0.6; font-size: 0.9rem;">Until automated email is sent to nominee</p>
+            <button class="btn btn-primary" onclick="checkIn()"><i class="fa-solid fa-heart"></i> I AM ALIVE (CHECK-IN)</button>
+            <button class="btn" style="background: transparent; color: #f87171; margin-top: 20px; font-size: 0.8rem;" onclick="wipeVault()">DELETE ALL DATA</button>
         </div>
     </div>
+
+    <div id="portal-view" class="hidden">
+        <div class="card">
+            <h2 style="color: var(--accent);"><i class="fa-solid fa-key"></i> Legacy Access Portal</h2>
+            <p style="font-size: 0.9rem; margin-bottom: 20px;">The owner of this vault has been inactive. If you are the authorized nominee, enter the Master Key to decrypt the contents.</p>
+            
+            <input type="password" id="unlockKey" placeholder="Enter Master Key" style="margin-bottom: 15px;">
+            <button class="btn btn-primary" onclick="unlockLegacy()"><i class="fa-solid fa-unlock"></i> DECRYPT VAULT</button>
+            
+            <div id="decrypted-result" class="hidden" style="margin-top: 30px; border-top: 1px solid #334155; padding-top: 20px;">
+                <h3 style="color: var(--solana); font-size: 1rem;">DECRYPTED CONTENT:</h3>
+                <div id="viewText" style="white-space: pre-wrap; background: #0f172a; padding: 15px; border-radius: 10px; font-size: 0.9rem;"></div>
+                <div id="viewFiles" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
-    function saveWill() {
-        const secret = document.getElementById('secretData').value;
+    // --- YOUR SECURE CREDENTIALS ---
+    const CONFIG = {
+        PUBLIC_KEY: "UjQcyAneLY2BmOV1Z",
+        SERVICE_ID: "service_andok0r",
+        TEMPLATE_ID: "template_3xoxzb9"
+    };
+
+    emailjs.init(CONFIG.PUBLIC_KEY);
+
+    let fileBuffer = [];
+
+    async function connectSolana() {
+        if (window.solana) {
+            const resp = await window.solana.connect();
+            document.getElementById('walletBtn').innerText = "CONNECTED: " + resp.publicKey.toString().slice(0,4);
+        } else { alert("Please install Phantom."); }
+    }
+
+    function processFiles(files) {
+        fileBuffer = [];
+        const preview = document.getElementById('filePreview');
+        preview.innerHTML = "<strong>Ready:</strong> ";
+        preview.classList.remove('hidden');
+        for (let f of files) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                fileBuffer.push({ name: f.name, data: e.target.result });
+                preview.innerHTML += f.name + " | ";
+            };
+            reader.readAsDataURL(f);
+        }
+    }
+
+    function sealVault() {
         const key = document.getElementById('masterKey').value;
-        const email = document.getElementById('beneficiaryEmail').value;
-        const days = document.getElementById('duration').value;
+        const nominee = document.getElementById('nomineeEmail').value;
+        if(key.length < 8 || !nominee) { alert("Key must be 8+ chars. Nominee email is required."); return; }
 
-        if(!secret || !key || !email) { alert("সবগুলো ঘর পূরণ করুন!"); return; }
-
-        // AES Encryption (Zero Knowledge)
-        const encryptedData = CryptoJS.AES.encrypt(secret, key).toString();
-
-        const willData = {
-            data: encryptedData,
-            beneficiary: email,
-            lastCheckIn: Date.now(),
-            duration: days * 24 * 60 * 60 * 1000 // Convert to ms
+        const data = {
+            text: document.getElementById('vaultData').value,
+            files: fileBuffer
         };
 
-        localStorage.setItem('digitalWill', JSON.stringify(willData));
-        alert("আপনার ডিজিটাল উইল এনক্রিপ্ট করে সেভ করা হয়েছে!");
-        updateUI();
+        const vault = {
+            payload: CryptoJS.AES.encrypt(JSON.stringify(data), key).toString(),
+            nominee: nominee,
+            owner: document.getElementById('ownerEmail').value,
+            interval: parseFloat(document.getElementById('triggerTime').value) * 24 * 60 * 60 * 1000,
+            lastSeen: Date.now(),
+            triggered: false
+        };
+
+        localStorage.setItem('dw_vault_v5', JSON.stringify(vault));
+        alert("Vault Sealed. Your legacy is protected.");
+        render();
+    }
+
+    function render() {
+        const stored = localStorage.getItem('dw_vault_v5');
+        if (!stored) return;
+
+        const vault = JSON.parse(stored);
+        const msLeft = (vault.lastSeen + vault.interval) - Date.now();
+
+        // NOMINEE DETECTION: If timer expired, show portal automatically
+        if (msLeft <= 0) {
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('active-view').classList.add('hidden');
+            document.getElementById('portal-view').classList.remove('hidden');
+            
+            if (!vault.triggered) sendTriggerEmail(vault);
+            return;
+        }
+
+        // OWNER VIEW
+        document.getElementById('setup-view').classList.add('hidden');
+        document.getElementById('active-view').classList.remove('hidden');
+        
+        const mins = Math.ceil(msLeft / 60000);
+        document.getElementById('timerDisplay').innerText = vault.interval < 3600000 ? mins + "m" : Math.ceil(mins/1440) + "d";
+    }
+
+    function sendTriggerEmail(vault) {
+        vault.triggered = true;
+        localStorage.setItem('dw_vault_v5', JSON.stringify(vault));
+
+        const params = {
+            beneficiary_email: vault.nominee,
+            message: "Action Required: The Digital Will legacy vault has expired. Access it here: " + window.location.href
+        };
+
+        emailjs.send(CONFIG.SERVICE_ID, CONFIG.TEMPLATE_ID, params)
+            .then(() => console.log("Nominee Notified."))
+            .catch(err => console.error(err));
+    }
+
+    function unlockLegacy() {
+        const key = document.getElementById('unlockKey').value;
+        const vault = JSON.parse(localStorage.getItem('dw_vault_v5'));
+
+        try {
+            const bytes = CryptoJS.AES.decrypt(vault.payload, key);
+            const decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+
+            document.getElementById('decrypted-result').classList.remove('hidden');
+            document.getElementById('viewText').innerText = decrypted.text;
+            
+            const fileArea = document.getElementById('viewFiles');
+            fileArea.innerHTML = "";
+            decrypted.files.forEach(f => {
+                fileArea.innerHTML += `<a href="${f.data}" download="${f.name}" style="display:block; color:var(--solana); margin-bottom:10px;">💾 Download ${f.name}</a>`;
+            });
+        } catch (e) { alert("Invalid Master Key."); }
     }
 
     function checkIn() {
-        let willData = JSON.parse(localStorage.getItem('digitalWill'));
-        willData.lastCheckIn = Date.now();
-        localStorage.setItem('digitalWill', JSON.stringify(willData));
-        alert("চেক-ইন সফল! সময় পুনঃনির্ধারণ করা হয়েছে।");
-        updateUI();
+        let vault = JSON.parse(localStorage.getItem('dw_vault_v5'));
+        vault.lastSeen = Date.now();
+        vault.triggered = false;
+        localStorage.setItem('dw_vault_v5', JSON.stringify(vault));
+        alert("Heartbeat confirmed. Timer reset.");
+        render();
     }
 
-    function resetVault() {
-        if(confirm("আপনি কি নিশ্চিত যে আপনি আপনার ভল্ট মুছে ফেলতে চান?")) {
-            localStorage.removeItem('digitalWill');
-            location.reload();
-        }
+    function wipeVault() {
+        if(confirm("Destroy all data?")) { localStorage.removeItem('dw_vault_v5'); location.reload(); }
     }
 
-    function updateUI() {
-        const willData = JSON.parse(localStorage.getItem('digitalWill'));
-        if(willData) {
-            document.getElementById('setup-form').classList.add('hidden');
-            document.getElementById('active-status').classList.remove('hidden');
-            
-            const nextCheckIn = willData.lastCheckIn + willData.duration;
-            const daysLeft = Math.ceil((nextCheckIn - Date.now()) / (1000 * 60 * 60 * 24));
-            document.getElementById('countdownText').innerText = `পরবর্তী চেক-ইন করতে হবে ${daysLeft} দিনের মধ্যে।`;
-            
-            if(Date.now() > nextCheckIn) {
-                alert("সময় পার হয়ে গেছে! ডেটা উত্তরাধিকারীর কাছে পাঠানোর প্রসেস শুরু হচ্ছে...");
-                // এখানে API Call (যেমন EmailJS) যোগ করা যাবে।
-            }
-        }
-    }
-
-    window.onload = updateUI;
+    window.onload = render;
+    setInterval(render, 30000);
 </script>
 
 </body>
